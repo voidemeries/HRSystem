@@ -1,6 +1,6 @@
-﻿namespace HRSystem.Application.Requests.TravelRequests.Common;
+﻿namespace HRSystem.Application.Requests.LeaveRequests.Common;
 
-public class TravelRequestDto
+public class LeaveRequestDto
 {
     public int Id { get; set; }
     public string RequestType { get; set; } = string.Empty;
@@ -17,10 +17,10 @@ public class TravelRequestDto
     public string? RejectionReason { get; set; }
     public DateTime SubmittedDate { get; set; }
 
-    // Travel-specific fields
-    public string Destination { get; set; } = string.Empty;
+    // Leave-specific fields
+    public string LeaveType { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public string Purpose { get; set; } = string.Empty;
-    public decimal EstimatedCost { get; set; }
+    public decimal TotalDays { get; set; }
+    public string Reason { get; set; } = string.Empty;
 }

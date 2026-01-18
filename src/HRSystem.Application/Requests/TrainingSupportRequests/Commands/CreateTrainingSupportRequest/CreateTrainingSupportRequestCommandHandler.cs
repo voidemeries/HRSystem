@@ -1,10 +1,10 @@
-﻿using HRSystem.Application.Common.Interfaces;
+﻿namespace HRSystem.Application.Requests.TrainingSupportRequests.Commands.CreateTrainingSupportRequest;
+
+using HRSystem.Application.Common.Interfaces;
 using HRSystem.Application.Requests.TrainingSupportRequests.Common;
 using HRSystem.Domain.Entities;
 using HRSystem.Domain.Enums;
 using MediatR;
-
-namespace HRSystem.Application.Requests.TrainingSupportRequests.Commands.CreateTrainingSupportRequest;
 
 public class CreateTrainingSupportRequestCommandHandler : IRequestHandler<CreateTrainingSupportRequestCommand, TrainingSupportRequestDto>
 {
@@ -21,6 +21,7 @@ public class CreateTrainingSupportRequestCommandHandler : IRequestHandler<Create
         _currentUserService = currentUserService;
         _approverService = approverService;
     }
+
     public async Task<TrainingSupportRequestDto> Handle(CreateTrainingSupportRequestCommand request, CancellationToken cancellationToken)
     {
         var currentEmployeeId = _currentUserService.EmployeeId
@@ -42,8 +43,12 @@ public class CreateTrainingSupportRequestCommandHandler : IRequestHandler<Create
             Status = RequestStatus.Submitted,
             ApproverPositionId = approverPositionId.Value,
             SubmittedDate = DateTime.UtcNow,
+            TrainingName = request.TrainingName,
+            Provider = request.Provider,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
+            Cost = request.Cost,
+            Justification = request.Justification
         };
 
         _context.TrainingSupportRequests.Add(trainingSupportRequest);
@@ -65,8 +70,12 @@ public class CreateTrainingSupportRequestCommandHandler : IRequestHandler<Create
             ApproverPositionId = trainingSupportRequest.ApproverPositionId,
             ApproverPositionName = trainingSupportRequest.ApproverPosition.Name,
             SubmittedDate = trainingSupportRequest.SubmittedDate,
+            TrainingName = trainingSupportRequest.TrainingName,
+            Provider = trainingSupportRequest.Provider,
             StartDate = trainingSupportRequest.StartDate,
-            EndDate = trainingSupportRequest.EndDate
+            EndDate = trainingSupportRequest.EndDate,
+            Cost = trainingSupportRequest.Cost,
+            Justification = trainingSupportRequest.Justification
         };
     }
 }

@@ -1,7 +1,7 @@
-﻿using HRSystem.Application.Requests.TravelRequests.Commands.CreateTravelRequest;
-using HRSystem.Application.Requests.TravelRequests.Common;
-using HRSystem.Application.Requests.TravelRequests.Queries.GetTravelRequestById;
-using HRSystem.Application.Requests.TravelRequests.Queries.GetTravelRequests;
+﻿using HRSystem.Application.Requests.ExpenseRequests.Commands.CreateExpenseRequest;
+using HRSystem.Application.Requests.ExpenseRequests.Common;
+using HRSystem.Application.Requests.ExpenseRequests.Queries.GetExpenseRequestById;
+using HRSystem.Application.Requests.ExpenseRequests.Queries.GetExpenseRequests;
 using HRSystem.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -11,41 +11,41 @@ namespace HRSystem.Api.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/requests/travel")]
-public class TravelRequestsController : ControllerBase
+[Route("api/requests/expense")]
+public class ExpenseRequestsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public TravelRequestsController(IMediator mediator)
+    public ExpenseRequestsController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
     /// <summary>
-    /// Get travel request by ID
+    /// Get expense request by ID
     /// </summary>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(TravelRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ExpenseRequestDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<TravelRequestDto>> GetById(int id)
+    public async Task<ActionResult<ExpenseRequestDto>> GetById(int id)
     {
-        var result = await _mediator.Send(new GetTravelRequestByIdQuery(id));
+        var result = await _mediator.Send(new GetExpenseRequestByIdQuery(id));
         return Ok(result);
     }
 
     /// <summary>
-    /// Get travel requests with optional filters
+    /// Get expense requests with optional filters
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(List<TravelRequestDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<ExpenseRequestDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<TravelRequestDto>>> GetAll(
+    public async Task<ActionResult<List<ExpenseRequestDto>>> GetAll(
         [FromQuery] bool? mine,
         [FromQuery] int? forEmployeeId,
         [FromQuery] RequestStatus? status)
     {
-        var query = new GetTravelRequestsQuery
+        var query = new GetExpenseRequestsQuery
         {
             Mine = mine,
             ForEmployeeId = forEmployeeId,
@@ -57,13 +57,13 @@ public class TravelRequestsController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new travel request
+    /// Create a new expense request
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(TravelRequestDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ExpenseRequestDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<TravelRequestDto>> Create([FromBody] CreateTravelRequestCommand command)
+    public async Task<ActionResult<ExpenseRequestDto>> Create([FromBody] CreateExpenseRequestCommand command)
     {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);

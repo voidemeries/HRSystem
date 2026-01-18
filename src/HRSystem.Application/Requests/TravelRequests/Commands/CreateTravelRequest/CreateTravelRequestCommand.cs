@@ -1,7 +1,7 @@
-﻿using HRSystem.Application.Requests.TravelReques.Common;
-using MediatR;
+﻿namespace HRSystem.Application.Requests.TravelRequests.Commands.CreateTravelRequest;
 
-namespace HRSystem.Application.Requests.TravelRequests.Commands.CreateTravelRequest;
+using HRSystem.Application.Requests.TravelRequests.Common;
+using MediatR;
 
 public record CreateTravelRequestCommand : IRequest<TravelRequestDto>
 {

@@ -1,7 +1,7 @@
-﻿using HRSystem.Application.Requests.TravelRequests.Commands.CreateTravelRequest;
-using HRSystem.Application.Requests.TravelRequests.Common;
-using HRSystem.Application.Requests.TravelRequests.Queries.GetTravelRequestById;
-using HRSystem.Application.Requests.TravelRequests.Queries.GetTravelRequests;
+﻿using HRSystem.Application.Requests.OvertimeRequests.Commands.CreateOvertimeRequest;
+using HRSystem.Application.Requests.OvertimeRequests.Common;
+using HRSystem.Application.Requests.OvertimeRequests.Queries.GetOvertimeRequestById;
+using HRSystem.Application.Requests.OvertimeRequests.Queries.GetOvertimeRequests;
 using HRSystem.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -11,41 +11,41 @@ namespace HRSystem.Api.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/requests/travel")]
-public class TravelRequestsController : ControllerBase
+[Route("api/requests/overtime")]
+public class OvertimeRequestsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public TravelRequestsController(IMediator mediator)
+    public OvertimeRequestsController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
     /// <summary>
-    /// Get travel request by ID
+    /// Get overtime request by ID
     /// </summary>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(TravelRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OvertimeRequestDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<TravelRequestDto>> GetById(int id)
+    public async Task<ActionResult<OvertimeRequestDto>> GetById(int id)
     {
-        var result = await _mediator.Send(new GetTravelRequestByIdQuery(id));
+        var result = await _mediator.Send(new GetOvertimeRequestByIdQuery(id));
         return Ok(result);
     }
 
     /// <summary>
-    /// Get travel requests with optional filters
+    /// Get overtime requests with optional filters
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(List<TravelRequestDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<OvertimeRequestDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<TravelRequestDto>>> GetAll(
+    public async Task<ActionResult<List<OvertimeRequestDto>>> GetAll(
         [FromQuery] bool? mine,
         [FromQuery] int? forEmployeeId,
         [FromQuery] RequestStatus? status)
     {
-        var query = new GetTravelRequestsQuery
+        var query = new GetOvertimeRequestsQuery
         {
             Mine = mine,
             ForEmployeeId = forEmployeeId,
@@ -57,13 +57,13 @@ public class TravelRequestsController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new travel request
+    /// Create a new overtime request
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(TravelRequestDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(OvertimeRequestDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<TravelRequestDto>> Create([FromBody] CreateTravelRequestCommand command)
+    public async Task<ActionResult<OvertimeRequestDto>> Create([FromBody] CreateOvertimeRequestCommand command)
     {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
