@@ -1,11 +1,11 @@
-﻿using HRSystem.Application.Common.Interfaces;
+﻿namespace HRSystem.Application.Requests.LeaveRequests.Commands.CreateLeaveRequest;
+
+using HRSystem.Application.Common.Interfaces;
 using HRSystem.Application.Requests.LeaveRequests.Common;
 using HRSystem.Domain.Entities;
 using HRSystem.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-
-namespace HRSystem.Application.Requests.LeaveRequests.Commands.CreateLeaveRequest;
 
 public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveRequestCommand, LeaveRequestDto>
 {
@@ -28,10 +28,8 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
         var currentEmployeeId = _currentUserService.EmployeeId
             ?? throw new UnauthorizedAccessException("User not authenticated.");
 
-        // Determine who the request is for
         var forEmployeeId = request.ForEmployeeId ?? currentEmployeeId;
 
-        // Get approver position for the target employee
         var approverPositionId = await _approverService.GetApproverPositionIdAsync(forEmployeeId, cancellationToken);
 
         if (!approverPositionId.HasValue)
@@ -39,7 +37,6 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
             throw new InvalidOperationException("Cannot determine approver. Employee may not have a manager.");
         }
 
-        // Calculate total days
         var totalDays = (request.EndDate.Date - request.StartDate.Date).Days + 1;
 
         var leaveRequest = new LeaveRequest
@@ -59,37 +56,34 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
         _context.LeaveRequests.Add(leaveRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        // Load related entities for response
-        await _context.Entry(leaveRequest).Reference(r => r.Requester).LoadAsync(cancellationToken);
-        await _context.Entry(leaveRequest).Reference(r => r.ForEmployee).LoadAsync(cancellationToken);
-        await _context.Entry(leaveRequest).Reference(r => r.ApproverPosition).LoadAsync(cancellationToken);
+        // Reload with related entities
+        var createdRequest = await _context.LeaveRequests
+            .Include(r => r.Requester)
+            .Include(r => r.ForEmployee)
+            .Include(r => r.ApproverPosition)
+            .FirstAsync(r => r.Id == leaveRequest.Id, cancellationToken);
 
-        return MapToDto(leaveRequest);
-    }
-
-    private LeaveRequestDto MapToDto(LeaveRequest request)
-    {
         return new LeaveRequestDto
         {
-            Id = request.Id,
-            RequestType = request.RequestType.ToString(),
-            RequesterId = request.RequesterId,
-            RequesterName = $"{request.Requester.FirstName} {request.Requester.LastName}",
-            ForEmployeeId = request.ForEmployeeId,
-            ForEmployeeName = $"{request.ForEmployee.FirstName} {request.ForEmployee.LastName}",
-            Status = request.Status.ToString(),
-            ApproverPositionId = request.ApproverPositionId,
-            ApproverPositionName = request.ApproverPosition.Name,
-            ApproverId = request.ApproverId,
-            ApproverName = request.Approver != null ? $"{request.Approver.FirstName} {request.Approver.LastName}" : null,
-            ApprovalDate = request.ApprovalDate,
-            RejectionReason = request.RejectionReason,
-            SubmittedDate = request.SubmittedDate,
-            LeaveType = request.LeaveType,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            TotalDays = request.TotalDays,
-            Reason = request.Reason
+            Id = createdRequest.Id,
+            RequestType = createdRequest.RequestType.ToString(),
+            RequesterId = createdRequest.RequesterId,
+            RequesterName = $"{createdRequest.Requester.FirstName} {createdRequest.Requester.LastName}",
+            ForEmployeeId = createdRequest.ForEmployeeId,
+            ForEmployeeName = $"{createdRequest.ForEmployee.FirstName} {createdRequest.ForEmployee.LastName}",
+            Status = createdRequest.Status.ToString(),
+            ApproverPositionId = createdRequest.ApproverPositionId,
+            ApproverPositionName = createdRequest.ApproverPosition.Name,
+            ApproverId = createdRequest.ApproverId,
+            ApproverName = createdRequest.Approver != null ? $"{createdRequest.Approver.FirstName} {createdRequest.Approver.LastName}" : null,
+            ApprovalDate = createdRequest.ApprovalDate,
+            RejectionReason = createdRequest.RejectionReason,
+            SubmittedDate = createdRequest.SubmittedDate,
+            LeaveType = createdRequest.LeaveType,
+            StartDate = createdRequest.StartDate,
+            EndDate = createdRequest.EndDate,
+            TotalDays = createdRequest.TotalDays,
+            Reason = createdRequest.Reason
         };
     }
 }

@@ -1,10 +1,11 @@
-﻿using HRSystem.Application.Common.Interfaces;
+﻿namespace HRSystem.Application.Requests.ExpenseRequests.Commands.CreateExpenseRequest;
+
+using HRSystem.Application.Common.Interfaces;
 using HRSystem.Application.Requests.ExpenseRequests.Common;
 using HRSystem.Domain.Entities;
 using HRSystem.Domain.Enums;
 using MediatR;
-
-namespace HRSystem.Application.Requests.ExpenseRequests.Commands.CreateExpenseRequest;
+using Microsoft.EntityFrameworkCore;
 
 public class CreateExpenseRequestCommandHandler : IRequestHandler<CreateExpenseRequestCommand, ExpenseRequestDto>
 {
@@ -53,27 +54,34 @@ public class CreateExpenseRequestCommandHandler : IRequestHandler<CreateExpenseR
         _context.ExpenseRequests.Add(expenseRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _context.Entry(expenseRequest).Reference(r => r.Requester).LoadAsync(cancellationToken);
-        await _context.Entry(expenseRequest).Reference(r => r.ForEmployee).LoadAsync(cancellationToken);
-        await _context.Entry(expenseRequest).Reference(r => r.ApproverPosition).LoadAsync(cancellationToken);
+        // Reload with related entities
+        var createdRequest = await _context.ExpenseRequests
+            .Include(r => r.Requester)
+            .Include(r => r.ForEmployee)
+            .Include(r => r.ApproverPosition)
+            .FirstAsync(r => r.Id == expenseRequest.Id, cancellationToken);
 
         return new ExpenseRequestDto
         {
-            Id = expenseRequest.Id,
-            RequestType = expenseRequest.RequestType.ToString(),
-            RequesterId = expenseRequest.RequesterId,
-            RequesterName = $"{expenseRequest.Requester.FirstName} {expenseRequest.Requester.LastName}",
-            ForEmployeeId = expenseRequest.ForEmployeeId,
-            ForEmployeeName = $"{expenseRequest.ForEmployee.FirstName} {expenseRequest.ForEmployee.LastName}",
-            Status = expenseRequest.Status.ToString(),
-            ApproverPositionId = expenseRequest.ApproverPositionId,
-            ApproverPositionName = expenseRequest.ApproverPosition.Name,
-            SubmittedDate = expenseRequest.SubmittedDate,
-            ExpenseDate = expenseRequest.ExpenseDate,
-            Category = expenseRequest.Category,
-            Amount = expenseRequest.Amount,
-            Description = expenseRequest.Description,
-            ReceiptAttached = expenseRequest.ReceiptAttached
+            Id = createdRequest.Id,
+            RequestType = createdRequest.RequestType.ToString(),
+            RequesterId = createdRequest.RequesterId,
+            RequesterName = $"{createdRequest.Requester.FirstName} {createdRequest.Requester.LastName}",
+            ForEmployeeId = createdRequest.ForEmployeeId,
+            ForEmployeeName = $"{createdRequest.ForEmployee.FirstName} {createdRequest.ForEmployee.LastName}",
+            Status = createdRequest.Status.ToString(),
+            ApproverPositionId = createdRequest.ApproverPositionId,
+            ApproverPositionName = createdRequest.ApproverPosition.Name,
+            ApproverId = createdRequest.ApproverId,
+            ApproverName = createdRequest.Approver != null ? $"{createdRequest.Approver.FirstName} {createdRequest.Approver.LastName}" : null,
+            ApprovalDate = createdRequest.ApprovalDate,
+            RejectionReason = createdRequest.RejectionReason,
+            SubmittedDate = createdRequest.SubmittedDate,
+            ExpenseDate = createdRequest.ExpenseDate,
+            Category = createdRequest.Category,
+            Amount = createdRequest.Amount,
+            Description = createdRequest.Description,
+            ReceiptAttached = createdRequest.ReceiptAttached
         };
     }
 }

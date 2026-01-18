@@ -1,10 +1,11 @@
-﻿using HRSystem.Application.Common.Interfaces;
+﻿namespace HRSystem.Application.Requests.RemoteWorkRequests.Commands.CreateRemoteWorkRequest;
+
+using HRSystem.Application.Common.Interfaces;
 using HRSystem.Application.Requests.RemoteWorkRequests.Common;
 using HRSystem.Domain.Entities;
 using HRSystem.Domain.Enums;
 using MediatR;
-
-namespace HRSystem.Application.Requests.RemoteWorkRequests.Commands.CreateRemoteWorkRequest;
+using Microsoft.EntityFrameworkCore;
 
 public class CreateRemoteWorkRequestCommandHandler : IRequestHandler<CreateRemoteWorkRequestCommand, RemoteWorkRequestDto>
 {
@@ -52,26 +53,33 @@ public class CreateRemoteWorkRequestCommandHandler : IRequestHandler<CreateRemot
         _context.RemoteWorkRequests.Add(remoteWorkRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _context.Entry(remoteWorkRequest).Reference(r => r.Requester).LoadAsync(cancellationToken);
-        await _context.Entry(remoteWorkRequest).Reference(r => r.ForEmployee).LoadAsync(cancellationToken);
-        await _context.Entry(remoteWorkRequest).Reference(r => r.ApproverPosition).LoadAsync(cancellationToken);
+        // Reload with related entities
+        var createdRequest = await _context.RemoteWorkRequests
+            .Include(r => r.Requester)
+            .Include(r => r.ForEmployee)
+            .Include(r => r.ApproverPosition)
+            .FirstAsync(r => r.Id == remoteWorkRequest.Id, cancellationToken);
 
         return new RemoteWorkRequestDto
         {
-            Id = remoteWorkRequest.Id,
-            RequestType = remoteWorkRequest.RequestType.ToString(),
-            RequesterId = remoteWorkRequest.RequesterId,
-            RequesterName = $"{remoteWorkRequest.Requester.FirstName} {remoteWorkRequest.Requester.LastName}",
-            ForEmployeeId = remoteWorkRequest.ForEmployeeId,
-            ForEmployeeName = $"{remoteWorkRequest.ForEmployee.FirstName} {remoteWorkRequest.ForEmployee.LastName}",
-            Status = remoteWorkRequest.Status.ToString(),
-            ApproverPositionId = remoteWorkRequest.ApproverPositionId,
-            ApproverPositionName = remoteWorkRequest.ApproverPosition.Name,
-            SubmittedDate = remoteWorkRequest.SubmittedDate,
-            StartDate = remoteWorkRequest.StartDate,
-            EndDate = remoteWorkRequest.EndDate,
-            Location = remoteWorkRequest.Location,
-            Reason = remoteWorkRequest.Reason
+            Id = createdRequest.Id,
+            RequestType = createdRequest.RequestType.ToString(),
+            RequesterId = createdRequest.RequesterId,
+            RequesterName = $"{createdRequest.Requester.FirstName} {createdRequest.Requester.LastName}",
+            ForEmployeeId = createdRequest.ForEmployeeId,
+            ForEmployeeName = $"{createdRequest.ForEmployee.FirstName} {createdRequest.ForEmployee.LastName}",
+            Status = createdRequest.Status.ToString(),
+            ApproverPositionId = createdRequest.ApproverPositionId,
+            ApproverPositionName = createdRequest.ApproverPosition.Name,
+            ApproverId = createdRequest.ApproverId,
+            ApproverName = createdRequest.Approver != null ? $"{createdRequest.Approver.FirstName} {createdRequest.Approver.LastName}" : null,
+            ApprovalDate = createdRequest.ApprovalDate,
+            RejectionReason = createdRequest.RejectionReason,
+            SubmittedDate = createdRequest.SubmittedDate,
+            StartDate = createdRequest.StartDate,
+            EndDate = createdRequest.EndDate,
+            Location = createdRequest.Location,
+            Reason = createdRequest.Reason
         };
     }
 }

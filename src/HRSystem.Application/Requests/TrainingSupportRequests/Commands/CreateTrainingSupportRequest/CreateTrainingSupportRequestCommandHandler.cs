@@ -5,6 +5,7 @@ using HRSystem.Application.Requests.TrainingSupportRequests.Common;
 using HRSystem.Domain.Entities;
 using HRSystem.Domain.Enums;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 public class CreateTrainingSupportRequestCommandHandler : IRequestHandler<CreateTrainingSupportRequestCommand, TrainingSupportRequestDto>
 {
@@ -54,28 +55,35 @@ public class CreateTrainingSupportRequestCommandHandler : IRequestHandler<Create
         _context.TrainingSupportRequests.Add(trainingSupportRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _context.Entry(trainingSupportRequest).Reference(r => r.Requester).LoadAsync(cancellationToken);
-        await _context.Entry(trainingSupportRequest).Reference(r => r.ForEmployee).LoadAsync(cancellationToken);
-        await _context.Entry(trainingSupportRequest).Reference(r => r.ApproverPosition).LoadAsync(cancellationToken);
+        // Reload with related entities
+        var createdRequest = await _context.TrainingSupportRequests
+            .Include(r => r.Requester)
+            .Include(r => r.ForEmployee)
+            .Include(r => r.ApproverPosition)
+            .FirstAsync(r => r.Id == trainingSupportRequest.Id, cancellationToken);
 
         return new TrainingSupportRequestDto
         {
-            Id = trainingSupportRequest.Id,
-            RequestType = trainingSupportRequest.RequestType.ToString(),
-            RequesterId = trainingSupportRequest.RequesterId,
-            RequesterName = $"{trainingSupportRequest.Requester.FirstName} {trainingSupportRequest.Requester.LastName}",
-            ForEmployeeId = trainingSupportRequest.ForEmployeeId,
-            ForEmployeeName = $"{trainingSupportRequest.ForEmployee.FirstName} {trainingSupportRequest.ForEmployee.LastName}",
-            Status = trainingSupportRequest.Status.ToString(),
-            ApproverPositionId = trainingSupportRequest.ApproverPositionId,
-            ApproverPositionName = trainingSupportRequest.ApproverPosition.Name,
-            SubmittedDate = trainingSupportRequest.SubmittedDate,
-            TrainingName = trainingSupportRequest.TrainingName,
-            Provider = trainingSupportRequest.Provider,
-            StartDate = trainingSupportRequest.StartDate,
-            EndDate = trainingSupportRequest.EndDate,
-            Cost = trainingSupportRequest.Cost,
-            Justification = trainingSupportRequest.Justification
+            Id = createdRequest.Id,
+            RequestType = createdRequest.RequestType.ToString(),
+            RequesterId = createdRequest.RequesterId,
+            RequesterName = $"{createdRequest.Requester.FirstName} {createdRequest.Requester.LastName}",
+            ForEmployeeId = createdRequest.ForEmployeeId,
+            ForEmployeeName = $"{createdRequest.ForEmployee.FirstName} {createdRequest.ForEmployee.LastName}",
+            Status = createdRequest.Status.ToString(),
+            ApproverPositionId = createdRequest.ApproverPositionId,
+            ApproverPositionName = createdRequest.ApproverPosition.Name,
+            ApproverId = createdRequest.ApproverId,
+            ApproverName = createdRequest.Approver != null ? $"{createdRequest.Approver.FirstName} {createdRequest.Approver.LastName}" : null,
+            ApprovalDate = createdRequest.ApprovalDate,
+            RejectionReason = createdRequest.RejectionReason,
+            SubmittedDate = createdRequest.SubmittedDate,
+            TrainingName = createdRequest.TrainingName,
+            Provider = createdRequest.Provider,
+            StartDate = createdRequest.StartDate,
+            EndDate = createdRequest.EndDate,
+            Cost = createdRequest.Cost,
+            Justification = createdRequest.Justification
         };
     }
 }
