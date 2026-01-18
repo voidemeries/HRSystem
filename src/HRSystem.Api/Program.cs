@@ -87,6 +87,22 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowMacBook", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:3000",  // React default
+            "http://localhost:4200",  // Angular default
+            "http://localhost:5173",   // Vite default
+            "http://localhost:7267"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 // Initialize and seed database
@@ -110,6 +126,8 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowMacBook");
 
 app.UseAuthentication();
 app.UseAuthorization();
