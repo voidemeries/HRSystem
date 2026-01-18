@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/src/HRSystem.Infrastructure/Migrations/20260114170050_InitialCreate.cs
+/src/HRSystem.Infrastructure/Migrations/20260114170050_InitialCreate.Designer.cs
+/src/HRSystem.Infrastructure/Migrations/ApplicationDbContextModelSnapshot.cs
