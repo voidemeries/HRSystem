@@ -16,4 +16,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\HRSystem.Domain\HRSystem.Domain.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Requests\LeaveRequests\Common\" />
+	</ItemGroup>
 </Project>

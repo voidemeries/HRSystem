@@ -1,4 +1,4 @@
-﻿using HRSystem.Application.Requests.Common;
+﻿using HRSystem.Application.Requests.LeaveRequests.Common;
 using MediatR;
 
 namespace HRSystem.Application.Requests.LeaveRequests.Commands.CreateLeaveRequest;
