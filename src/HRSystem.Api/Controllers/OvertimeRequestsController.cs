@@ -2,6 +2,8 @@
 using HRSystem.Application.Requests.OvertimeRequests.Common;
 using HRSystem.Application.Requests.OvertimeRequests.Queries.GetOvertimeRequestById;
 using HRSystem.Application.Requests.OvertimeRequests.Queries.GetOvertimeRequests;
+using HRSystem.Application.Requests.OvertimeRequests.Commands.ApproveOvertimeRequest;
+using HRSystem.Application.Requests.OvertimeRequests.Commands.RejectOvertimeRequest;
 using HRSystem.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -67,5 +69,39 @@ public class OvertimeRequestsController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+    /// <summary>
+    /// Approve an overtime request
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(OvertimeRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<OvertimeRequestDto>> Approve(int id)
+    {
+        var result = await _mediator.Send(new ApproveOvertimeRequestCommand { Id = id });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reject an overtime request
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    [ProducesResponseType(typeof(OvertimeRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<OvertimeRequestDto>> Reject(int id, [FromBody] RejectOvertimeRequestCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("ID mismatch");
+        }
+
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 }

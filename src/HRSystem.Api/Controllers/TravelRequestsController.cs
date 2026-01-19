@@ -2,6 +2,8 @@
 using HRSystem.Application.Requests.TravelRequests.Common;
 using HRSystem.Application.Requests.TravelRequests.Queries.GetTravelRequestById;
 using HRSystem.Application.Requests.TravelRequests.Queries.GetTravelRequests;
+using HRSystem.Application.Requests.TravelRequests.Commands.ApproveTravelRequest;
+using HRSystem.Application.Requests.TravelRequests.Commands.RejectTravelRequest;
 using HRSystem.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -67,5 +69,39 @@ public class TravelRequestsController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+    /// <summary>
+    /// Approve a travel request
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(TravelRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TravelRequestDto>> Approve(int id)
+    {
+        var result = await _mediator.Send(new ApproveTravelRequestCommand { Id = id });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reject a travel request
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    [ProducesResponseType(typeof(TravelRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TravelRequestDto>> Reject(int id, [FromBody] RejectTravelRequestCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("ID mismatch");
+        }
+
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 }

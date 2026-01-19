@@ -1,4 +1,6 @@
-﻿using HRSystem.Application.Requests.TrainingSupportRequests.Commands.CreateTrainingSupportRequest;
+﻿using HRSystem.Application.Requests.TrainingSupportRequests.Commands.ApproveTrainingSupportRequest;
+using HRSystem.Application.Requests.TrainingSupportRequests.Commands.CreateTrainingSupportRequest;
+using HRSystem.Application.Requests.TrainingSupportRequests.Commands.RejectTrainingSupportRequest;
 using HRSystem.Application.Requests.TrainingSupportRequests.Common;
 using HRSystem.Application.Requests.TrainingSupportRequests.Queries.GetTrainingSupportRequestById;
 using HRSystem.Application.Requests.TrainingSupportRequests.Queries.GetTrainingSupportRequests;
@@ -67,5 +69,40 @@ public class TrainingSupportRequestsController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    /// <summary>
+    /// Approve a training support request
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(TrainingSupportRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TrainingSupportRequestDto>> Approve(int id)
+    {
+        var result = await _mediator.Send(new ApproveTrainingSupportRequestCommand { Id = id });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reject a training support request
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    [ProducesResponseType(typeof(TrainingSupportRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TrainingSupportRequestDto>> Reject(int id, [FromBody] RejectTrainingSupportRequestCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("ID mismatch");
+        }
+
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 }

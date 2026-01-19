@@ -2,6 +2,8 @@
 using HRSystem.Application.Requests.ExpenseRequests.Common;
 using HRSystem.Application.Requests.ExpenseRequests.Queries.GetExpenseRequestById;
 using HRSystem.Application.Requests.ExpenseRequests.Queries.GetExpenseRequests;
+using HRSystem.Application.Requests.ExpenseRequests.Commands.ApproveExpenseRequest;
+using HRSystem.Application.Requests.ExpenseRequests.Commands.RejectExpenseRequest;
 using HRSystem.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -68,4 +70,40 @@ public class ExpenseRequestsController : ControllerBase
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
+
+    /// <summary>
+    /// Approve an expense request
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ExpenseRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ExpenseRequestDto>> Approve(int id)
+    {
+        var result = await _mediator.Send(new ApproveExpenseRequestCommand { Id = id });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reject an expense request
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    [ProducesResponseType(typeof(ExpenseRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ExpenseRequestDto>> Reject(int id, [FromBody] RejectExpenseRequestCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("ID mismatch");
+        }
+
+        var result = await _mediator.Send(command);
+        return Ok(result);
+    }
+
 }

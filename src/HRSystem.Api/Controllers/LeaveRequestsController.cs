@@ -1,4 +1,6 @@
-﻿using HRSystem.Application.Requests.LeaveRequests.Commands.CreateLeaveRequest;
+﻿using HRSystem.Application.Requests.LeaveRequests.Commands.ApproveLeaveRequest;
+using HRSystem.Application.Requests.LeaveRequests.Commands.CreateLeaveRequest;
+using HRSystem.Application.Requests.LeaveRequests.Commands.RejectLeaveRequest;
 using HRSystem.Application.Requests.LeaveRequests.Common;
 using HRSystem.Application.Requests.LeaveRequests.Queries.GetLeaveRequestById;
 using HRSystem.Application.Requests.LeaveRequests.Queries.GetLeaveRequests;
@@ -67,5 +69,40 @@ public class LeaveRequestsController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    /// <summary>
+    /// Approve a leave request
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(LeaveRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<LeaveRequestDto>> Approve(int id)
+    {
+        var result = await _mediator.Send(new ApproveLeaveRequestCommand { Id = id });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reject a leave request
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    [ProducesResponseType(typeof(LeaveRequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<LeaveRequestDto>> Reject(int id, [FromBody] RejectLeaveRequestCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("ID mismatch");
+        }
+
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 }
