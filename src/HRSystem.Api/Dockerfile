@@ -7,24 +7,35 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["HRSystem.csproj", "."]
-RUN dotnet restore "./HRSystem.csproj"
+
+# Copy solution and project files
+COPY ["HRSystem.slnx", "."]
+COPY ["src/HRSystem.Api/HRSystem.Api.csproj", "src/HRSystem.Api/"]
+COPY ["src/HRSystem.Application/HRSystem.Application.csproj", "src/HRSystem.Application/"]
+COPY ["src/HRSystem.Domain/HRSystem.Domain.csproj", "src/HRSystem.Domain/"]
+COPY ["src/HRSystem.Infrastructure/HRSystem.Infrastructure.csproj", "src/HRSystem.Infrastructure/"]
+
+# Restore dependencies
+RUN dotnet restore "src/HRSystem.Api/HRSystem.Api.csproj"
+
+# Copy all source files
 COPY . .
-WORKDIR "/src/."
-RUN dotnet build "./HRSystem.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# Build the API project
+WORKDIR "/src/src/HRSystem.Api"
+RUN dotnet build "HRSystem.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./HRSystem.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "HRSystem.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "HRSystem.dll"]
+ENTRYPOINT ["dotnet", "HRSystem.Api.dll"]
