@@ -92,10 +92,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowMacBook", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:3000",  // React default
-            "http://localhost:4200",  // Angular default
-            "http://localhost:5173",   // Vite default
-            "http://localhost:7267"
+            "http://localhost:3000",
+            "http://localhost:4200",
+            "http://localhost:5173",
+            "http://localhost:7267",
+            "http://192.168.1.7:3000",  // Add your MacBook's IP here
+            "http://192.168.1.7:7267"   // And here for Vite
         )
         .AllowAnyMethod()
         .AllowAnyHeader()
