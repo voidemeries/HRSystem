@@ -27,6 +27,8 @@ public class SearchUserScreensQueryHandler : IRequestHandler<SearchUserScreensQu
         var employeeId = _currentUserService.EmployeeId
             ?? throw new UnauthorizedAccessException("User not authenticated.");
 
+        var isAdmin = _currentUserService.IsAdmin;
+
         // Get all user permissions
         var userPermissions = await _permissionService.GetUserPermissionsForAllScreensAsync(employeeId, cancellationToken);
 
@@ -45,20 +47,21 @@ public class SearchUserScreensQueryHandler : IRequestHandler<SearchUserScreensQu
 
         var allScreens = await query.ToListAsync(cancellationToken);
 
-        // Filter by permissions and IsActive
+        // Filter screens based on permissions
         var authorizedScreens = allScreens.Where(s =>
         {
+            // Check if user has any permissions for this screen
             if (!userPermissions.ContainsKey(s.Id))
                 return false;
 
             var permissions = userPermissions[s.Id];
 
-            // AdminOverride sees all
-            if (permissions.Contains(PermissionType.AdminOverride))
+            // Admin users see all screens (permissions already include all types for admin)
+            if (isAdmin)
                 return true;
 
             // Regular users only see active screens
-            return s.IsActive;
+            return s.IsActive && permissions.Any();
         }).ToList();
 
         return authorizedScreens
@@ -71,7 +74,9 @@ public class SearchUserScreensQueryHandler : IRequestHandler<SearchUserScreensQu
                 ParentScreenId = s.ParentScreenId,
                 ParentScreenName = s.ParentScreen?.Name,
                 Icon = s.Icon,
-                Permissions = userPermissions[s.Id].Select(p => p.ToString()).ToList()
+                Permissions = userPermissions.ContainsKey(s.Id)
+                    ? userPermissions[s.Id].Select(p => p.ToString()).ToList()
+                    : new List<string>()
             })
             .ToList();
     }

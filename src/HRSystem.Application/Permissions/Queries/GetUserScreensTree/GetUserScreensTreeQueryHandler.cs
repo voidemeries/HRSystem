@@ -39,20 +39,21 @@ public class GetUserScreensTreeQueryHandler : IRequestHandler<GetUserScreensTree
             .ThenBy(s => s.Name)
             .ToListAsync(cancellationToken);
 
-        // Filter screens based on permissions and IsActive
+        // Filter screens based on permissions
         var authorizedScreens = allScreens.Where(s =>
         {
+            // Check if user has any permissions for this screen
             if (!userPermissions.ContainsKey(s.Id))
                 return false;
 
             var permissions = userPermissions[s.Id];
 
-            // Check if user has AdminOverride permission
-            if (permissions.Contains(PermissionType.AdminOverride))
-                return true; // AdminOverride sees all screens regardless of IsActive
+            // Admin users see all screens
+            if (isAdmin)
+                return true;
 
-            // Regular users only see active screens
-            return s.IsActive;
+            // Regular users only see active screens where they have permissions
+            return s.IsActive && permissions.Any();
         }).ToList();
 
         // Build tree

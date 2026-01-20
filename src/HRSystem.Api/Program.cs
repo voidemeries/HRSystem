@@ -97,7 +97,11 @@ builder.Services.AddCors(options =>
             "http://localhost:5173",
             "http://localhost:7267",
             "http://192.168.1.7:3000",  // Add your MacBook's IP here
-            "http://192.168.1.7:7267"   // And here for Vite
+            "http://192.168.1.7:7267",   // And here for Vite
+            "http://192.168.1.110:3000",
+            "http://192.168.1.110:7267",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:7267"
         )
         .AllowAnyMethod()
         .AllowAnyHeader()

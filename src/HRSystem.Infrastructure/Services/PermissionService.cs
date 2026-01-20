@@ -4,6 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HRSystem.Infrastructure.Services;
 
+/// <summary>
+/// Service for resolving user permissions based on scope assignments
+/// Permission Resolution Logic:
+/// 1. Admin users have all permissions to all screens automatically
+/// 2. For non-admin users, permissions are accumulated from all applicable scopes:
+///    - Permissions assigned to the employee directly (ScopeType.Employee)
+///    - Permissions assigned to the employee's position (ScopeType.Position)
+///    - Permissions assigned to the employee's organization (ScopeType.Organization)
+/// 3. All permissions from all matching scopes are combined (union)
+/// 4. Example: If an employee has View through Organization and Manage through Position,
+///    they get both View AND Manage permissions
+/// </summary>
 public class PermissionService : IPermissionService
 {
     private readonly IApplicationDbContext _context;
@@ -26,48 +38,55 @@ public class PermissionService : IPermissionService
         if (employee == null)
             return new List<PermissionType>();
 
-        var permissions = new List<PermissionType>();
+        // Admin users have all permissions automatically
+        if (employee.IsAdmin)
+        {
+            return new List<PermissionType>
+            {
+                PermissionType.View,
+                PermissionType.Manage,
+                PermissionType.Approve
+            };
+        }
+
+        var permissions = new HashSet<PermissionType>();
 
         // Get all permission assignments for this screen
         var assignments = await _context.PermissionAssignments
             .Where(p => p.ScreenResourceId == screenResourceId)
             .ToListAsync(cancellationToken);
 
-        // Employee-level permissions (highest precedence)
+        // Collect permissions from Employee scope
         var employeePermissions = assignments
             .Where(p => p.ScopeType == ScopeType.Employee && p.ScopeId == employeeId)
-            .Select(p => p.PermissionType)
-            .ToList();
+            .Select(p => p.PermissionType);
 
-        if (employeePermissions.Any())
+        foreach (var perm in employeePermissions)
         {
-            permissions.AddRange(employeePermissions);
-        }
-        else
-        {
-            // Position-level permissions (second precedence)
-            var positionPermissions = assignments
-                .Where(p => p.ScopeType == ScopeType.Position && p.ScopeId == employee.PositionId)
-                .Select(p => p.PermissionType)
-                .ToList();
-
-            if (positionPermissions.Any())
-            {
-                permissions.AddRange(positionPermissions);
-            }
-            else
-            {
-                // Organization-level permissions (lowest precedence)
-                var organizationPermissions = assignments
-                    .Where(p => p.ScopeType == ScopeType.Organization && p.ScopeId == employee.OrganizationId)
-                    .Select(p => p.PermissionType)
-                    .ToList();
-
-                permissions.AddRange(organizationPermissions);
-            }
+            permissions.Add(perm);
         }
 
-        return permissions.Distinct().ToList();
+        // Collect permissions from Position scope
+        var positionPermissions = assignments
+            .Where(p => p.ScopeType == ScopeType.Position && p.ScopeId == employee.PositionId)
+            .Select(p => p.PermissionType);
+
+        foreach (var perm in positionPermissions)
+        {
+            permissions.Add(perm);
+        }
+
+        // Collect permissions from Organization scope
+        var organizationPermissions = assignments
+            .Where(p => p.ScopeType == ScopeType.Organization && p.ScopeId == employee.OrganizationId)
+            .Select(p => p.PermissionType);
+
+        foreach (var perm in organizationPermissions)
+        {
+            permissions.Add(perm);
+        }
+
+        return permissions.ToList();
     }
 
     public async Task<Dictionary<int, List<PermissionType>>> GetUserPermissionsForAllScreensAsync(
@@ -75,60 +94,63 @@ public class PermissionService : IPermissionService
         CancellationToken cancellationToken = default)
     {
         var employee = await _context.Employees
+            .Include(e => e.Organization)
+            .Include(e => e.Position)
             .FirstOrDefaultAsync(e => e.Id == employeeId, cancellationToken);
 
         if (employee == null)
             return new Dictionary<int, List<PermissionType>>();
 
+        var result = new Dictionary<int, List<PermissionType>>();
+
+        // Admin users have all permissions to all screens
+        if (employee.IsAdmin)
+        {
+            var allScreenIds = await _context.ScreenResources
+                .Select(s => s.Id)
+                .ToListAsync(cancellationToken);
+
+            var allPermissions = new List<PermissionType>
+            {
+                PermissionType.View,
+                PermissionType.Manage,
+                PermissionType.Approve
+            };
+
+            foreach (var screenId in allScreenIds)
+            {
+                result[screenId] = allPermissions;
+            }
+
+            return result;
+        }
+
+        // Get all permission assignments
         var allAssignments = await _context.PermissionAssignments
             .ToListAsync(cancellationToken);
 
-        var screenIds = allAssignments.Select(p => p.ScreenResourceId).Distinct();
-        var result = new Dictionary<int, List<PermissionType>>();
+        // Get assignments that apply to this employee
+        var applicableAssignments = allAssignments.Where(p =>
+            // Employee-specific assignments
+            (p.ScopeType == ScopeType.Employee && p.ScopeId == employeeId) ||
+            // Position-based assignments
+            (p.ScopeType == ScopeType.Position && p.ScopeId == employee.PositionId) ||
+            // Organization-based assignments
+            (p.ScopeType == ScopeType.Organization && p.ScopeId == employee.OrganizationId)
+        ).ToList();
 
-        foreach (var screenId in screenIds)
+        // Group by screen and collect all permissions
+        var screenGroups = applicableAssignments.GroupBy(p => p.ScreenResourceId);
+
+        foreach (var screenGroup in screenGroups)
         {
-            var screenAssignments = allAssignments.Where(p => p.ScreenResourceId == screenId).ToList();
-            var permissions = new List<PermissionType>();
-
-            // Employee-level (highest precedence)
-            var employeePerms = screenAssignments
-                .Where(p => p.ScopeType == ScopeType.Employee && p.ScopeId == employeeId)
+            var screenId = screenGroup.Key;
+            var permissionsForScreen = screenGroup
                 .Select(p => p.PermissionType)
+                .Distinct()
                 .ToList();
 
-            if (employeePerms.Any())
-            {
-                permissions.AddRange(employeePerms);
-            }
-            else
-            {
-                // Position-level
-                var positionPerms = screenAssignments
-                    .Where(p => p.ScopeType == ScopeType.Position && p.ScopeId == employee.PositionId)
-                    .Select(p => p.PermissionType)
-                    .ToList();
-
-                if (positionPerms.Any())
-                {
-                    permissions.AddRange(positionPerms);
-                }
-                else
-                {
-                    // Organization-level
-                    var orgPerms = screenAssignments
-                        .Where(p => p.ScopeType == ScopeType.Organization && p.ScopeId == employee.OrganizationId)
-                        .Select(p => p.PermissionType)
-                        .ToList();
-
-                    permissions.AddRange(orgPerms);
-                }
-            }
-
-            if (permissions.Any())
-            {
-                result[screenId] = permissions.Distinct().ToList();
-            }
+            result[screenId] = permissionsForScreen;
         }
 
         return result;
@@ -139,11 +161,10 @@ public class PermissionService : IPermissionService
         CancellationToken cancellationToken = default)
     {
         var permissions = await GetUserPermissionsForAllScreensAsync(employeeId, cancellationToken);
+
+        // Return screen IDs where user has at least View permission
         return permissions
-            .Where(kvp => kvp.Value.Contains(PermissionType.View) ||
-                         kvp.Value.Contains(PermissionType.Manage) ||
-                         kvp.Value.Contains(PermissionType.Approve) ||
-                         kvp.Value.Contains(PermissionType.AdminOverride))
+            .Where(kvp => kvp.Value.Contains(PermissionType.View))
             .Select(kvp => kvp.Key)
             .ToList();
     }
