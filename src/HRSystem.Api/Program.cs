@@ -111,6 +111,17 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Ensure Kestrel binds to configured URLS env var when provided
+var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+if (!string.IsNullOrWhiteSpace(urls))
+{
+    app.Urls.Clear();
+    foreach (var url in urls.Split(';', StringSplitOptions.RemoveEmptyEntries))
+    {
+        app.Urls.Add(url.Trim());
+    }
+}
+
 // Initialize and seed database
 using (var scope = app.Services.CreateScope())
 {
@@ -131,7 +142,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseHttpsRedirection();
+// In containers we usually serve HTTP only; opt-in via config if needed
+var enableHttpsRedirect = app.Configuration.GetValue("EnableHttpsRedirect", false);
+if (enableHttpsRedirect)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowMacBook");
 

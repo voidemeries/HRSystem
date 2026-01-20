@@ -22,7 +22,16 @@ public class ApplicationDbContextInitializer
     {
         try
         {
-            await _context.Database.MigrateAsync();
+            // If there are migrations, apply them; otherwise create schema from model
+            var hasMigrations = _context.Database.GetMigrations().Any();
+            if (hasMigrations)
+            {
+                await _context.Database.MigrateAsync();
+            }
+            else
+            {
+                await _context.Database.EnsureCreatedAsync();
+            }
         }
         catch (Exception ex)
         {
